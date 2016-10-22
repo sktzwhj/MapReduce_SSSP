@@ -45,6 +45,7 @@ public class SingleSourceSP {
 	public static String IN = "input";
 	//we define maxDistance as the longest distance which indicates the distance is not updated. 
 	private static Double maxDistance = 65535.0;
+	
 
 	public static class SPMapper extends Mapper<Object, Text, IntWritable, Text> {
 
@@ -117,6 +118,7 @@ public class SingleSourceSP {
 	public static class SPReducer extends Reducer<IntWritable, Text, Text, Text> {
 
 		private Counter updateCounter;
+		
 
 		@Override
 		public void reduce(IntWritable key, Iterable<Text> values, Context context)
@@ -189,8 +191,17 @@ public class SingleSourceSP {
 				updateCounter.increment(1);
 			}
 			//output
-			context.write(new Text(key.toString() + " " + minShortestDistance.toString() + "|" + adjacentList
-					+ ((update == true) ? "|Y" : "|N")), new Text(""));
+			
+			//the output for the last run and intermediate run are different.
+			if (context.getConfiguration().get("JobSeq").equals("Last")){
+				context.write(new Text(context.getConfiguration().get("queryNode") + " " + key.toString() + " " + minShortestDistance.toString()), new Text(""));
+
+				
+			}
+			else{
+				context.write(new Text(key.toString() + " " + minShortestDistance.toString() + "|" + adjacentList
+						+ ((update == true) ? "|Y" : "|N")), new Text(""));
+			}
 		}
 	}
 
@@ -224,7 +235,7 @@ public class SingleSourceSP {
 
 		BufferedReader inputBuffer = new BufferedReader(new InputStreamReader(s3object.getObjectContent()));
 
-		Path newinPath = new Path(IN + "_1");
+		Path newinPath = new Path("/comp9313/input/" + IN + "_1");
 
 		FSDataOutputStream newFormatInput = hdfs.create(newinPath);
 
@@ -284,7 +295,7 @@ public class SingleSourceSP {
 
 		// start to configure mapreduce
 
-		String input = IN + "_1";
+		String input = "/comp9313/input/" + IN + "_1";
 
 		System.out.printf("The input is %s", input);
 
@@ -303,6 +314,10 @@ public class SingleSourceSP {
 			System.out.printf("This is the %d round of run for mapreduce job\n", ++runCycle);
 
 			Configuration conf = new Configuration();
+			
+			conf.set("JobSeq", "NotLast");
+			
+			conf.set("queryNode", singleSource.toString());
 
 			Job job = Job.getInstance(conf, "GraphEdgeReverse");
 
@@ -316,7 +331,9 @@ public class SingleSourceSP {
 
 			job.setOutputValueClass(Text.class);
 
-			job.setNumReduceTasks(3);
+			job.setNumReduceTasks(38);
+			
+		
 			
 
 			FileInputFormat.addInputPath(job, new Path(input));
@@ -336,6 +353,10 @@ public class SingleSourceSP {
 				isdone = true;
 				//if isdone has been set to true, we run one more time to output the result to Amazaon S3. 
 				Configuration confFinal = new Configuration();
+				
+				confFinal.set("JobSeq", "Last");
+				
+				confFinal.set("queryNode", singleSource.toString());
 
 				Job jobFinal = Job.getInstance(confFinal, "GraphEdgeReverse");
 
