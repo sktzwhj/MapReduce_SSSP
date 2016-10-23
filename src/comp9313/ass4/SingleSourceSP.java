@@ -89,6 +89,7 @@ public class SingleSourceSP {
 					tmpAdjacentLists.put(key.toString(), tmp);
 
 				} else {
+					
 					tmpAdjacentLists.get(key.toString()).add(val.toString());
 				}
 
@@ -170,8 +171,9 @@ public class SingleSourceSP {
 
 				// very tricky part, there is a tab between key and value in the
 				// output file...
-
-				if ((Double.compare(shortestDistance, maxDistance) != 0) && nodeInfo[1].length() > 1) {
+				
+				//add this condition to avoid the nodes without adjacent list.
+				if ((Double.compare(shortestDistance, maxDistance) != 0) && (nodeInfo[1].length() > 1) && nodeInfo[2].split("\\s")[0].equals("Y")) {
 
 					// System.out.println("enter here");
 
@@ -221,6 +223,7 @@ public class SingleSourceSP {
 			for (Text val : values) {
 
 				try {
+					
 					if (val.toString().startsWith("O")) {
 						// get the original shortest distance in the last run
 						// for this node
@@ -251,7 +254,9 @@ public class SingleSourceSP {
 						if (val.toString().length() > 2) {
 
 							adjacentList = val.toString().split("A")[1];
+							
 						} else {
+							
 							adjacentList = "";
 						}
 
@@ -442,7 +447,7 @@ public class SingleSourceSP {
 
 			conf.set("queryNode", singleSource.toString());
 
-			Job job = Job.getInstance(conf, "GraphEdgeReverse");
+			Job job = Job.getInstance(conf, "Iterated Jobs");
 
 			job.setJarByClass(SingleSourceSP.class);
 
@@ -454,7 +459,7 @@ public class SingleSourceSP {
 
 			job.setOutputValueClass(Text.class);
 
-			job.setNumReduceTasks(38);
+			job.setNumReduceTasks(1);
 
 			FileInputFormat.addInputPath(job, new Path(input));
 
@@ -479,7 +484,7 @@ public class SingleSourceSP {
 
 				confFinal.set("queryNode", singleSource.toString());
 
-				Job jobFinal = Job.getInstance(confFinal, "GraphEdgeReverse");
+				Job jobFinal = Job.getInstance(confFinal, "Final Result");
 
 				jobFinal.setJarByClass(SingleSourceSP.class);
 
