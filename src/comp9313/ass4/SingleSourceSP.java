@@ -172,10 +172,11 @@ public class SingleSourceSP {
 				// very tricky part, there is a tab between key and value in the
 				// output file...
 				
-				//add this condition to avoid the nodes without adjacent list.
+				/*
+				 * compute the new distance for the nodes with the following conditions: (1) the shortest distance from the source to this node 
+				 * is not maxDistance. (2) the node has adjacent list. (3) the shortest distance for this node has been updated in last run. 
+				 */
 				if ((Double.compare(shortestDistance, maxDistance) != 0) && (nodeInfo[1].length() > 1) && nodeInfo[2].split("\\s")[0].equals("Y")) {
-
-					// System.out.println("enter here");
 
 					for (int i = 0; i < adjacentNodes.length; i++) {
 
@@ -280,7 +281,7 @@ public class SingleSourceSP {
 			}
 			// output
 
-			// the output for the last run and intermediate run are different.
+			// the output for the last run and intermediate run are different. We do not need the Y/N and adjacent list in last run.
 			if (context.getConfiguration().get("JobSeq").equals("Last")) {
 				context.write(new Text(context.getConfiguration().get("queryNode") + " " + key.toString() + " "
 						+ minShortestDistance.toString()), new Text(""));
@@ -421,15 +422,17 @@ public class SingleSourceSP {
 		jobFormat.waitForCompletion(true);
 
 		// start to configure mapreduce
+		
+		 
 
-		String input = "/comp9313/input/newinput" + "/part-r-00000";
+		String input = "/comp9313/input/newinput";
 		
 
 		System.out.printf("The input is %s", input);
 
 		String output = OUT;
 		// this path is for the intermediate results.
-		String intermediateOutputBase = "/comp9313/output";
+		String intermediateOutputBase = "/comp9313/SF/output";
 
 		String intermediateOutput = intermediateOutputBase;
 
@@ -459,7 +462,7 @@ public class SingleSourceSP {
 
 			job.setOutputValueClass(Text.class);
 
-			job.setNumReduceTasks(1);
+			job.setNumReduceTasks(3);
 
 			FileInputFormat.addInputPath(job, new Path(input));
 
